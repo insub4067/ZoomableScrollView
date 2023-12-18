@@ -19,7 +19,13 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
     }
     
     public func makeUIView(context: Context) -> UIScrollView {
-        
+        let scrollView = setupScrollView(context: context)
+        addHostedView(to: scrollView, context: context)
+        addGestureRecognizer(to: scrollView, context: context)
+        return scrollView
+    }
+    
+    private func setupScrollView(context: Context) -> UIScrollView {
         let scrollView = UIScrollView()
         scrollView.backgroundColor = .clear
         scrollView.delegate = context.coordinator
@@ -29,22 +35,25 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.showsVerticalScrollIndicator = false
         scrollView.clipsToBounds = false
-        
+        return scrollView
+    }
+    
+    private func addHostedView(to scrollView: UIScrollView, context: Context) {
         let hostedView = context.coordinator.hostingController.view!
         hostedView.translatesAutoresizingMaskIntoConstraints = true
         hostedView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         hostedView.frame = scrollView.bounds
         hostedView.backgroundColor = .clear
         scrollView.addSubview(hostedView)
-        
+    }
+    
+    private func addGestureRecognizer(to scrollView: UIScrollView, context: Context) {
         let gestureRecognizer = UITapGestureRecognizer(
             target: context.coordinator,
             action: #selector(context.coordinator.handleDoubleTap(sender:))
         )
         gestureRecognizer.numberOfTapsRequired = 2
         scrollView.addGestureRecognizer(gestureRecognizer)
-        
-        return scrollView
     }
     
     public func makeCoordinator() -> Coordinator {
@@ -84,6 +93,9 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         
         return CGRect(x: x, y: y, width: width, height: height)
     }
+}
+
+extension ZoomableScrollView {
     
     public class Coordinator: NSObject, UIScrollViewDelegate {
         
