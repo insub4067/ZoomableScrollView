@@ -3,15 +3,18 @@
 
 import SwiftUI
 
-fileprivate let maxAllowedScale = 4.0
-
-public struct ZoomableScrollView<ScollContent: View>: UIViewRepresentable {
+public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
     
-    private var content: ScollContent
+    private let maxAllowedScale: CGFloat
+    private var content: Content
     @State private var currentScale: CGFloat = 1.0
     @State private var tapLocation: CGPoint = .zero
     
-    public init(@ViewBuilder content: () -> ScollContent) {
+    public init(
+        maxAllowedScale: CGFloat = 4.0,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.maxAllowedScale = maxAllowedScale
         self.content = content()
     }
     
@@ -26,7 +29,6 @@ public struct ZoomableScrollView<ScollContent: View>: UIViewRepresentable {
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.showsVerticalScrollIndicator = false
         scrollView.clipsToBounds = false
-        scrollView.backgroundColor = .clear
         
         let hostedView = context.coordinator.hostingController.view!
         hostedView.translatesAutoresizingMaskIntoConstraints = true
@@ -47,6 +49,7 @@ public struct ZoomableScrollView<ScollContent: View>: UIViewRepresentable {
     
     public func makeCoordinator() -> Coordinator {
         .init(
+            maxAllowedScale: self.maxAllowedScale,
             hostingController: .init(rootView: content),
             scale: $currentScale,
             location: $tapLocation
@@ -59,7 +62,6 @@ public struct ZoomableScrollView<ScollContent: View>: UIViewRepresentable {
         // Scale out
         if uiView.zoomScale > uiView.minimumZoomScale {
             uiView.setZoomScale(currentScale, animated: true)
-            
         // Scale in to a specific point
         } else if tapLocation != .zero {
             let destination = zoomRect(
@@ -85,16 +87,19 @@ public struct ZoomableScrollView<ScollContent: View>: UIViewRepresentable {
     
     public class Coordinator: NSObject, UIScrollViewDelegate {
         
-        var hostingController: UIHostingController<ScollContent>
+        private let maxAllowedScale: CGFloat
+        var hostingController: UIHostingController<Content>
         
         @Binding private var currentScale: CGFloat
         @Binding private var tapLocation: CGPoint
         
         init(
-            hostingController: UIHostingController<ScollContent>,
+            maxAllowedScale: CGFloat,
+            hostingController: UIHostingController<Content>,
             scale: Binding<CGFloat>,
             location: Binding<CGPoint>
         ) {
+            self.maxAllowedScale = maxAllowedScale
             self.hostingController = hostingController
             _currentScale = scale
             _tapLocation = location
@@ -105,13 +110,15 @@ public struct ZoomableScrollView<ScollContent: View>: UIViewRepresentable {
         }
         
         public func scrollViewDidEndZooming(_: UIScrollView, with _: UIView?, atScale scale: CGFloat) {
-            currentScale = scale
+            DispatchQueue.main.async { self.currentScale = scale }
         }
         
         @objc func handleDoubleTap(sender: UITapGestureRecognizer) {
             let location = sender.location(in: hostingController.view)
-            self.tapLocation = location
-            self.currentScale = (currentScale == 1.0) ? maxAllowedScale : 1.0
+            DispatchQueue.main.async {
+                self.tapLocation = location
+                self.currentScale = (self.currentScale == 1.0) ? self.maxAllowedScale : 1.0
+            }
         }
     }
 }
