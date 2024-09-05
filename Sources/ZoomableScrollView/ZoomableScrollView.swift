@@ -31,7 +31,8 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         scrollView.delegate = context.coordinator
         scrollView.maximumZoomScale = maxAllowedScale
         scrollView.minimumZoomScale = 1
-        scrollView.bouncesZoom = true
+        scrollView.bounces = false
+        scrollView.bouncesZoom = false
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.showsVerticalScrollIndicator = false
         scrollView.clipsToBounds = false
